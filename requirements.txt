@@ -1,0 +1,5 @@
+# Core dependencies
+torch
+transformers
+accelerate
+python-dotenv
