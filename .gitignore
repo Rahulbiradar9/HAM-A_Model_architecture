@@ -1,0 +1,31 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv/
+
+# PyTorch checkpoints and models
+*.pt
+*.pth
+*.ckpt
+Model_/checkpoints/
+Model_/logs/
+
+# Large datasets and transcripts
+*.csv
+json_transcripts/
+after_scoring/
+*_batch_hama_scores*.json
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# IDEs
+.vscode/
+.idea/
