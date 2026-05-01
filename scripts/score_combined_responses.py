@@ -265,18 +265,6 @@ def get_hama_score(patient_text, ellie_context, tokenizer, model):
         return None
     score = validate_scores(score)
 
-    if score["total_score"] == 0:
-        fallback_msg = FALLBACK_PROMPT_TEMPLATE.format(patient_text=patient_text)
-        try:
-            raw2 = _run_inference("You are a clinical psychologist.", fallback_msg, temperature=0.55)
-            score2 = parse_json_response(raw2)
-            if score2:
-                score2 = validate_scores(score2)
-                if score2["total_score"] > 0:
-                    score = score2
-        except Exception as e:
-            pass
-
     return score
 
 def load_model():
@@ -301,8 +289,9 @@ def load_model():
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="HAM-A Scorer for Combined Responses.")
+    model_name_clean = MODEL_ID.replace("/", "_")
     parser.add_argument("--input", default="combo_response/combined_responses.json")
-    parser.add_argument("--output", default="combo_response/scored_combined_responses.json")
+    parser.add_argument("--output", default=f"combo_response/scored_{model_name_clean}.json")
     parser.add_argument("--batch-size", type=int, default=25)
     parser.add_argument("--resume", action="store_true")
     parser.add_argument("--min-words", type=int, default=5, help="Skip responses shorter than this")
@@ -340,19 +329,32 @@ if __name__ == "__main__":
 
         if word_count < args.min_words:
             print(f"  SKIP — too short (< {args.min_words} words)")
+            results[conv_id] = {
+                "ellie": ellie_text,
+                "participant": patient_text,
+                "score": None,
+                "skip_reason": "too_short"
+            }
             continue
 
         score = get_hama_score(patient_text, ellie_text, tokenizer, model)
         if score:
-            score["id"] = conv_id
-            score["ellie_prompt"] = ellie_text
-            score["patient_response"] = patient_text
-            
             detected = {k: v for k, v in score.items() if k in SUBSCALES and v > 0}
             print(f"  OK  total={score['total_score']}  detected={detected if detected else 'none'}")
-            results[conv_id] = score
+            
+            results[conv_id] = {
+                "ellie": ellie_text,
+                "participant": patient_text,
+                "score": score
+            }
         else:
             print("  FAILED")
+            results[conv_id] = {
+                "ellie": ellie_text,
+                "participant": patient_text,
+                "score": None,
+                "skip_reason": "failed_inference"
+            }
             errors += 1
 
         batch_count += 1
