@@ -33,6 +33,9 @@ Thumbs.db
 # Results
 participant_responses.json
 ellie_responses.json
+all_conversation_pairs.json
+combined_transcripts/
+all_combo-pair/
 error.log
 visualizations/
 visualizations_all_3/
