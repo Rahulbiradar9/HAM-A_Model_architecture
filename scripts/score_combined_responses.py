@@ -314,57 +314,46 @@ if __name__ == "__main__":
     batch_count = 0
 
     print("=" * 65)
-    print("HAM-A SCORER — Combined Responses")
+    print(f"HAM-A SCORER — Scoring ENTIRE File: {args.input}")
     print("=" * 65)
 
-    for idx, (conv_id, conv_data) in enumerate(data.items()):
-        if conv_id in results:
-            continue
+    patient_lines = []
+    for conv_id, conv_data in data.items():
+        patient_lines.append(conv_data.get("participant", ""))
+    
+    full_patient_text = " ".join(patient_lines)
+    word_count = len(full_patient_text.split())
 
-        ellie_text = conv_data.get("ellie", "")
-        patient_text = conv_data.get("participant", "")
-        word_count = len(patient_text.split())
+    print(f"File contains {len(data)} exchanges, {word_count} total patient words.")
+    
+    if word_count < args.min_words:
+        print(f"  SKIP — too short (< {args.min_words} words)")
+        score = None
+    else:
+        # We don't pass all ellie prompts, just the patient text
+        # But our get_hama_score expects ellie_text, let's pass a generic string
+        score = get_hama_score(full_patient_text, "Multiple questions asked", tokenizer, model)
 
-        print(f"\n[{idx+1}/{total}] ID {conv_id} ({word_count} words)")
-
-        if word_count < args.min_words:
-            print(f"  SKIP — too short (< {args.min_words} words)")
-            results[conv_id] = {
-                "ellie": ellie_text,
-                "participant": patient_text,
-                "score": None,
-                "skip_reason": "too_short"
-            }
-            continue
-
-        score = get_hama_score(patient_text, ellie_text, tokenizer, model)
-        if score:
-            detected = {k: v for k, v in score.items() if k in SUBSCALES and v > 0}
-            print(f"  OK  total={score['total_score']}  detected={detected if detected else 'none'}")
-            
-            results[conv_id] = {
-                "ellie": ellie_text,
-                "participant": patient_text,
-                "score": score
-            }
-        else:
-            print("  FAILED")
-            results[conv_id] = {
-                "ellie": ellie_text,
-                "participant": patient_text,
-                "score": None,
-                "skip_reason": "failed_inference"
-            }
-            errors += 1
-
-        batch_count += 1
-        if batch_count % args.batch_size == 0:
-            with open(args.output, "w", encoding="utf-8") as f:
-                json.dump(results, f, indent=4)
-            print(f"  [checkpoint] Saved {len(results)} results.")
+    if score:
+        detected = {k: v for k, v in score.items() if k in SUBSCALES and v > 0}
+        print(f"  OK  total={score['total_score']}  detected={detected if detected else 'none'}")
+        
+        results = {
+            "num_exchanges": len(data),
+            "total_patient_words": word_count,
+            "score": score
+        }
+    else:
+        print("  FAILED")
+        results = {
+            "num_exchanges": len(data),
+            "total_patient_words": word_count,
+            "score": None,
+            "error": "failed_inference"
+        }
 
     # Final save
     with open(args.output, "w", encoding="utf-8") as f:
         json.dump(results, f, indent=4)
 
-    print(f"\nCOMPLETE! Scored: {len(results)} Errors: {errors} Time: {(time.time() - start_time)/60:.1f}m")
+    print(f"\nCOMPLETE! Output saved to: {args.output}")
