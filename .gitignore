@@ -29,3 +29,10 @@ Thumbs.db
 # IDEs
 .vscode/
 .idea/
+
+# Results
+participant_responses.json
+ellie_responses.json
+error.log
+visualizations/
+visualizations_all_3/
