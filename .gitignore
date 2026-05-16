@@ -13,14 +13,21 @@ ENV/
 *.pt
 *.pth
 *.ckpt
+*.safetensors
+*.bin
 Model_/checkpoints/
 Model_/logs/
+M_chat16k/mental_roberta_training/results/
 
 # Large datasets and transcripts
 *.csv
 json_transcripts/
 after_scoring/
 *_batch_hama_scores*.json
+data/raw/
+data/processed/
+M_chat16k/data/
+after_scoring/data/
 
 # OS generated files
 .DS_Store
